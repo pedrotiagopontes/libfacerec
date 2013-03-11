@@ -1,6 +1,6 @@
-#include "subspace.hpp"
-#include "decomposition.hpp"
-#include "helper.hpp"
+#include "../include/subspace.hpp"
+#include "../include/decomposition.hpp"
+#include "../include/helper.hpp"
 
 #include <iostream>
 

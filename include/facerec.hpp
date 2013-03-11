@@ -24,6 +24,7 @@
 #include "helper.hpp"
 #include "lbp.hpp"
 
+
 using namespace std;
 
 namespace cv {
@@ -88,6 +89,9 @@ public:
 
     // Gets a prediction from a FaceRecognizer.
     virtual void predict(InputArray src, int &label, double &confidence) const = 0;
+
+	//ADDED: Gets the ordered n best predictions from a Face Recognizer.
+	virtual void predict(InputArray src, int n, vector<int> &labels, vector<double> &confidences) const = 0;
 
     // Serializes this object to a given filename.
     virtual void save(const string& filename) const;

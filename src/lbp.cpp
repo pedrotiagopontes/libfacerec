@@ -1,5 +1,5 @@
-#include "lbp.hpp"
-#include "helper.hpp"
+#include "../include/lbp.hpp"
+#include "../include/helper.hpp"
 
 //------------------------------------------------------------------------------
 // cv::olbp

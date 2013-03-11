@@ -16,7 +16,7 @@
  *   See <http://www.opensource.org/licenses/bsd-license>
  */
 
-#include "facerec.hpp"
+#include "../include/facerec.hpp"
 
 #include "opencv2/core/core.hpp"
 #include "opencv2/highgui/highgui.hpp"
@@ -68,10 +68,13 @@ static void read_csv(const string& filename, vector<Mat>& images, vector<int>& l
 int main(int argc, const char *argv[]) {
     // Check for valid command line arguments, print usage
     // if no arguments were given.
+	/*
     if (argc != 2) {
         cout << "usage: " << argv[0] << " <csv.ext>" << endl;
         exit(1);
     }
+	*/
+
     // Get the path to your CSV.
     string fn_csv = string(argv[1]);
     // These vectors hold the images and corresponding labels.
@@ -118,11 +121,13 @@ int main(int argc, const char *argv[]) {
     //
     //      cv::createEigenFaceRecognizer(10, 123.0);
     //
-    Ptr<FaceRecognizer> model = createFisherFaceRecognizer();
+    Ptr<FaceRecognizer> model = createEigenFaceRecognizer();
     model->train(images, labels);
     // The following line predicts the label of a given
     // test image:
-    int predictedLabel = model->predict(testSample);
+	vector<int> labelsTest;
+	vector<double> confidencesTest;
+    model->predict(testSample, 20, labelsTest, confidencesTest);
     //
     // To get the confidence of a prediction call the model with:
     //
@@ -130,8 +135,12 @@ int main(int argc, const char *argv[]) {
     //      double confidence = 0.0;
     //      model->predict(testSample, predictedLabel, confidence);
     //
-    string result_message = format("Predicted class = %d / Actual class = %f.", predictedLabel, testLabel);
-    cout << result_message << endl;
+	for(int i=0; i < labelsTest.size(); i++){
+		string result_message = format("%d Predicted class = %d / Actual class = %d / Confidence = %f",i, labelsTest[i], testLabel, confidencesTest[i]);
+		cout << result_message << endl;
+	}
+
+	/*
     // Sometimes you'll need to get/set internal model data,
     // which isn't exposed by the public cv::FaceRecognizer.
     // Since each cv::FaceRecognizer is derived from a
@@ -164,6 +173,7 @@ int main(int argc, const char *argv[]) {
         applyColorMap(grayscale, cgrayscale, COLORMAP_JET);
         imshow(format("%d", i), cgrayscale);
     }
+	*/
     waitKey(0);
 
     return 0;

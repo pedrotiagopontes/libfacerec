@@ -20,8 +20,12 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/core/internal.hpp"
 
-#include "facerec.hpp"
-#include "helper.hpp"
+#include "../include/facerec.hpp"
+#include "../include/helper.hpp"
+
+#include <list>
+#include <vector>
+#include <iostream>
 
 using std::set;
 
@@ -106,6 +110,9 @@ public:
     // Predicts the label and confidence for a given sample.
     void predict(InputArray _src, int &label, double &dist) const;
 
+	//ADDED: Gets the ordered n best predictions from a Face Recognizer.
+	void predict(InputArray src, int n, vector<int> &labels, vector<double> &confidences) const;
+
     // See FaceRecognizer::load.
     void load(const FileStorage& fs);
 
@@ -160,6 +167,9 @@ public:
 
     // Predicts the label and confidence for a given sample.
     void predict(InputArray _src, int &label, double &dist) const;
+
+	//ADDED: Gets the ordered n best predictions from a Face Recognizer.
+	void predict(InputArray src, int n, vector<int> &labels, vector<double> &confidences) const;
 
     // See FaceRecognizer::load.
     virtual void load(const FileStorage& fs);
@@ -244,6 +254,9 @@ public:
 
     // Predicts the label and confidence for a given sample.
     void predict(InputArray _src, int &label, double &dist) const;
+
+	//ADDED: Gets the ordered n best predictions from a Face Recognizer.
+	void predict(InputArray src, int n, vector<int> &labels, vector<double> &confidences) const;
 
     // See FaceRecognizer::load.
     void load(const FileStorage& fs);
@@ -368,6 +381,94 @@ int Eigenfaces::predict(InputArray _src) const {
     double dummy;
     predict(_src, label, dummy);
     return label;
+}
+
+void insertPair(list<pair<int, double>> &elements, list<pair<int, double>>::iterator it,double dist, int label){
+	bool pop = true;
+	if( (*it).first == label ){
+		(*it).second = dist;
+	}else{
+		elements.insert(it, pair<int, double>(label, dist));
+		while(it != elements.end()){
+			if((*it).first == label){
+				elements.erase(it);
+				pop = false;
+				break;
+			}
+			it++;
+		}
+	
+		if(pop){
+			elements.pop_back();
+			pop = true;
+		}
+	}
+}
+
+void updateList(list<pair<int, double>> &elements, double dist, int label, double threshold){
+	list<pair<int, double>>::iterator it;
+	double minDist = DBL_MAX;
+
+	if( dist <= elements.back().second){
+		for(it = elements.begin(); it != elements.end(); it++){
+			minDist = (*it).second;
+			if((dist < minDist) && (dist < threshold)){
+				insertPair(elements, it, dist, label);
+				break;
+			}else{
+				if((*it).first == label){
+					break;
+				}
+			}
+		}
+	}
+}
+
+void Eigenfaces::predict(InputArray _src, int n, vector<int> &labels, vector<double> &confidences) const{
+	// get data
+	Mat src = _src.getMat();
+	// make sure the user is passing correct data
+	if(_projections.empty()) {
+		// throw error if no data (or simply return -1?)
+		string error_message = "This Eigenfaces model is not computed yet. Did you call Eigenfaces::train?";
+		CV_Error(CV_StsError, error_message);
+	} else if(_eigenvectors.rows != static_cast<int>(src.total())) {
+		// check data alignment just for clearer exception messages
+		string error_message = format("Wrong input image size. Reason: Training and Test images must be of equal size! Expected an image with %d elements, but got %d.", _eigenvectors.rows, src.total());
+		CV_Error(CV_StsBadArg, error_message);
+	}
+	// project into PCA subspace
+	Mat q = subspaceProject(_eigenvectors, _mean, src.reshape(1,1));
+	
+	list<pair<int, double>> elements;
+	size_t elements_size = MIN(n, _projections.size());
+	elements.resize(elements_size, pair<int,double>(-1, DBL_MAX));
+	int label;
+	double dist;
+	list<pair<int, double>>::iterator it = elements.begin();
+
+	for(size_t sampleIdx = 0; sampleIdx < _projections.size(); sampleIdx++) {
+		dist = norm(_projections[sampleIdx], q, NORM_L2);
+		label = _labels.at<int>((int)sampleIdx);
+		cout <<sampleIdx << " label: " << _labels.at<int>((int)sampleIdx) << " confidence: " << dist << endl;
+
+		updateList(elements, dist, label, _threshold);
+		/*
+		it = elements.begin();
+		while(it != elements.end()){
+			cout <<  (*it).first << "-" << (*it).second << ", ";
+			it++;
+		}
+		cout << endl << endl;
+		it = elements.begin();
+		*/
+	}
+
+	for(it = elements.begin(); it != elements.end() && (*it).first != -1; it++){
+		//cout << "End label: " << _labels.at<int>(*it) << " confidence: " << distances[*it] << endl;
+		labels.push_back((*it).first);
+		confidences.push_back((*it).second);
+	}
 }
 
 void Eigenfaces::load(const FileStorage& fs) {
@@ -515,6 +616,11 @@ int Fisherfaces::predict(InputArray _src) const {
     return label;
 }
 
+void Fisherfaces::predict(InputArray _src, int n, vector<int> &labels, vector<double> &confidences) const{
+	string error_message = "Not implemented yet\n";
+    CV_Error(CV_StsBadArg, error_message);
+}
+
 //------------------------------------------------------------------------------
 // cv::LBPH
 //------------------------------------------------------------------------------
@@ -630,6 +736,11 @@ int LBPH::predict(InputArray _src) const {
     double dummy;
     predict(_src, label, dummy);
     return label;
+}
+
+void LBPH::predict(InputArray _src, int n, vector<int> &labels, vector<double> &confidences) const{
+	string error_message = "Not implemented yet\n";
+    CV_Error(CV_StsBadArg, error_message);
 }
 
 Ptr<FaceRecognizer> createEigenFaceRecognizer(int num_components, double threshold)

@@ -1,5 +1,5 @@
-#include "decomposition.hpp"
-#include "helper.hpp"
+#include "../include/decomposition.hpp"
+#include "../include/helper.hpp"
 
 void EigenvalueDecomposition::compute(InputArray src) {
     if(cv::isSymmetric(src)) {

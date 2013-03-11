@@ -15,7 +15,7 @@
  *
  *   See <http://www.opensource.org/licenses/bsd-license>
  */
-#include "facerec.hpp"
+#include "../include/facerec.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 
 #ifdef _MSC_VER
