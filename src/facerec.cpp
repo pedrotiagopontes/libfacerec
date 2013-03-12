@@ -62,6 +62,46 @@ using std::set;
 namespace cv
 {
 
+void insertPair(list<pair<int, double>> &elements, list<pair<int, double>>::iterator it,double dist, int label){
+	bool pop = true;
+	if( (*it).first == label ){
+		(*it).second = dist;
+	}else{
+		elements.insert(it, pair<int, double>(label, dist));
+		while(it != elements.end()){
+			if((*it).first == label){
+				elements.erase(it);
+				pop = false;
+				break;
+			}
+			it++;
+		}
+	
+		if(pop){
+			elements.pop_back();
+			pop = true;
+		}
+	}
+}
+
+void updateList(list<pair<int, double>> &elements, double dist, int label, double threshold){
+	list<pair<int, double>>::iterator it;
+	double minDist = DBL_MAX;
+
+	if( dist <= elements.back().second){
+		for(it = elements.begin(); it != elements.end(); it++){
+			minDist = (*it).second;
+			if((dist < minDist) && (dist < threshold)){
+				insertPair(elements, it, dist, label);
+				break;
+			}else{
+				if((*it).first == label){
+					break;
+				}
+			}
+		}
+	}
+}
 
 
 // Turk, M., and Pentland, A. "Eigenfaces for recognition.". Journal of
@@ -383,47 +423,6 @@ int Eigenfaces::predict(InputArray _src) const {
     return label;
 }
 
-void insertPair(list<pair<int, double>> &elements, list<pair<int, double>>::iterator it,double dist, int label){
-	bool pop = true;
-	if( (*it).first == label ){
-		(*it).second = dist;
-	}else{
-		elements.insert(it, pair<int, double>(label, dist));
-		while(it != elements.end()){
-			if((*it).first == label){
-				elements.erase(it);
-				pop = false;
-				break;
-			}
-			it++;
-		}
-	
-		if(pop){
-			elements.pop_back();
-			pop = true;
-		}
-	}
-}
-
-void updateList(list<pair<int, double>> &elements, double dist, int label, double threshold){
-	list<pair<int, double>>::iterator it;
-	double minDist = DBL_MAX;
-
-	if( dist <= elements.back().second){
-		for(it = elements.begin(); it != elements.end(); it++){
-			minDist = (*it).second;
-			if((dist < minDist) && (dist < threshold)){
-				insertPair(elements, it, dist, label);
-				break;
-			}else{
-				if((*it).first == label){
-					break;
-				}
-			}
-		}
-	}
-}
-
 void Eigenfaces::predict(InputArray _src, int n, vector<int> &labels, vector<double> &confidences) const{
 	// get data
 	Mat src = _src.getMat();
@@ -450,7 +449,7 @@ void Eigenfaces::predict(InputArray _src, int n, vector<int> &labels, vector<dou
 	for(size_t sampleIdx = 0; sampleIdx < _projections.size(); sampleIdx++) {
 		dist = norm(_projections[sampleIdx], q, NORM_L2);
 		label = _labels.at<int>((int)sampleIdx);
-		cout <<sampleIdx << " label: " << _labels.at<int>((int)sampleIdx) << " confidence: " << dist << endl;
+		//cout <<sampleIdx << " label: " << _labels.at<int>((int)sampleIdx) << " confidence: " << dist << endl;
 
 		updateList(elements, dist, label, _threshold);
 		/*
@@ -617,8 +616,47 @@ int Fisherfaces::predict(InputArray _src) const {
 }
 
 void Fisherfaces::predict(InputArray _src, int n, vector<int> &labels, vector<double> &confidences) const{
-	string error_message = "Not implemented yet\n";
-    CV_Error(CV_StsBadArg, error_message);
+	    Mat src = _src.getMat();
+    // check data alignment just for clearer exception messages
+    if(_projections.empty()) {
+        // throw error if no data (or simply return -1?)
+        string error_message = "This Fisherfaces model is not computed yet. Did you call Fisherfaces::train?";
+        CV_Error(CV_StsBadArg, error_message);
+    } else if(src.total() != (size_t) _eigenvectors.rows) {
+        string error_message = format("Wrong input image size. Reason: Training and Test images must be of equal size! Expected an image with %d elements, but got %d.", _eigenvectors.rows, src.total());
+        CV_Error(CV_StsBadArg, error_message);
+    }
+    // project into LDA subspace
+    Mat q = subspaceProject(_eigenvectors, _mean, src.reshape(1,1));
+    
+	list<pair<int, double>> elements;
+	size_t elements_size = MIN(n, _projections.size());
+	elements.resize(elements_size, pair<int,double>(-1, DBL_MAX));
+	int label;
+	double dist;
+	list<pair<int, double>>::iterator it = elements.begin();
+
+	for(size_t sampleIdx = 0; sampleIdx < _projections.size(); sampleIdx++) {
+		dist = norm(_projections[sampleIdx], q, NORM_L2);
+		label = _labels.at<int>((int)sampleIdx);
+		//cout <<sampleIdx << " label: " << _labels.at<int>((int)sampleIdx) << " confidence: " << dist << endl;
+
+		updateList(elements, dist, label, _threshold);
+		/*
+		it = elements.begin();
+		while(it != elements.end()){
+			cout <<  (*it).first << "-" << (*it).second << ", ";
+			it++;
+		}
+		cout << endl << endl;
+		it = elements.begin();
+		*/
+	}
+
+	for(it = elements.begin(); it != elements.end() && (*it).first != -1; it++){
+		labels.push_back((*it).first);
+		confidences.push_back((*it).second);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -739,8 +777,49 @@ int LBPH::predict(InputArray _src) const {
 }
 
 void LBPH::predict(InputArray _src, int n, vector<int> &labels, vector<double> &confidences) const{
-	string error_message = "Not implemented yet\n";
-    CV_Error(CV_StsBadArg, error_message);
+	if(_histograms.empty()) {
+        // throw error if no data (or simply return -1?)
+        string error_message = "This LBPH model is not computed yet. Did you call the train method?";
+        CV_Error(CV_StsBadArg, error_message);
+    }
+    Mat src = _src.getMat();
+    // get the spatial histogram from input image
+    Mat lbp_image = elbp(src, _radius, _neighbors);
+    Mat query = spatial_histogram(
+            lbp_image, /* lbp_image */
+            static_cast<int>(std::pow(2.0, static_cast<double>(_neighbors))), /* number of possible patterns */
+            _grid_x, /* grid size x */
+            _grid_y, /* grid size y */
+            true /* normed histograms */);
+
+	list<pair<int, double>> elements;
+	size_t elements_size = MIN(n, _histograms.size());
+	elements.resize(elements_size, pair<int,double>(-1, DBL_MAX));
+	int label;
+	double dist;
+	list<pair<int, double>>::iterator it = elements.begin();
+
+	for(int sampleIdx = 0; sampleIdx < _histograms.size(); sampleIdx++) {
+		dist = compareHist(_histograms[sampleIdx], query, CV_COMP_CHISQR);
+		label = _labels.at<int>((int)sampleIdx);
+		//cout <<sampleIdx << " label: " << _labels.at<int>((int)sampleIdx) << " confidence: " << dist << endl;
+
+		updateList(elements, dist, label, _threshold);
+		/*
+		it = elements.begin();
+		while(it != elements.end()){
+			cout <<  (*it).first << "-" << (*it).second << ", ";
+			it++;
+		}
+		cout << endl << endl;
+		it = elements.begin();
+		*/
+	}
+
+	for(it = elements.begin(); it != elements.end() && (*it).first != -1; it++){
+		labels.push_back((*it).first);
+		confidences.push_back((*it).second);
+	}
 }
 
 Ptr<FaceRecognizer> createEigenFaceRecognizer(int num_components, double threshold)

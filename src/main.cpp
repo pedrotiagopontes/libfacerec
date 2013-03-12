@@ -121,7 +121,7 @@ int main(int argc, const char *argv[]) {
     //
     //      cv::createEigenFaceRecognizer(10, 123.0);
     //
-    Ptr<FaceRecognizer> model = createEigenFaceRecognizer();
+	Ptr<FaceRecognizer> model = createLBPHFaceRecognizer();
     model->train(images, labels);
     // The following line predicts the label of a given
     // test image:
