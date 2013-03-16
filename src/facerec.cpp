@@ -106,7 +106,7 @@ void updateList(list<pair<int, double>> &elements, double dist, int label, doubl
 
 // Turk, M., and Pentland, A. "Eigenfaces for recognition.". Journal of
 // Cognitive Neuroscience 3 (1991), 71–86.
-class Eigenfaces : public FaceRecognizer
+class Eigenfaces : public FaceRecognizerExtended
 {
 private:
     int _num_components;
@@ -118,8 +118,8 @@ private:
     Mat _mean;
 
 public:
-    using FaceRecognizer::save;
-    using FaceRecognizer::load;
+    using FaceRecognizerExtended::save;
+    using FaceRecognizerExtended::load;
 
     // Initializes an empty Eigenfaces model.
     Eigenfaces(int num_components = 0, double threshold = DBL_MAX) :
@@ -151,12 +151,12 @@ public:
     void predict(InputArray _src, int &label, double &dist) const;
 
 	//ADDED: Gets the ordered n best predictions from a Face Recognizer.
-	void predict(InputArray src, int n, vector<int> &labels, vector<double> &confidences) const;
+	void predictN(InputArray src, size_t n, vector<int> &labels, vector<double> &confidences) const;
 
-    // See FaceRecognizer::load.
+    // See FaceRecognizerExtended::load.
     void load(const FileStorage& fs);
 
-    // See FaceRecognizer::save.
+    // See FaceRecognizerExtended::save.
     void save(FileStorage& fs) const;
 
     AlgorithmInfo* info() const;
@@ -166,7 +166,7 @@ public:
 // faces: Recognition using class specific linear projection.". IEEE
 // Transactions on Pattern Analysis and Machine Intelligence 19, 7 (1997),
 // 711–720.
-class Fisherfaces: public FaceRecognizer
+class Fisherfaces: public FaceRecognizerExtended
 {
 private:
     int _num_components;
@@ -178,8 +178,8 @@ private:
     Mat _labels;
 
 public:
-    using FaceRecognizer::save;
-    using FaceRecognizer::load;
+    using FaceRecognizerExtended::save;
+    using FaceRecognizerExtended::load;
 
     // Initializes an empty Fisherfaces model.
     Fisherfaces(int num_components = 0, double threshold = DBL_MAX) :
@@ -209,12 +209,12 @@ public:
     void predict(InputArray _src, int &label, double &dist) const;
 
 	//ADDED: Gets the ordered n best predictions from a Face Recognizer.
-	void predict(InputArray src, int n, vector<int> &labels, vector<double> &confidences) const;
+	void predictN(InputArray src, size_t n, vector<int> &labels, vector<double> &confidences) const;
 
-    // See FaceRecognizer::load.
+    // See FaceRecognizerExtended::load.
     virtual void load(const FileStorage& fs);
 
-    // See FaceRecognizer::save.
+    // See FaceRecognizerExtended::save.
     virtual void save(FileStorage& fs) const;
 
     AlgorithmInfo* info() const;
@@ -226,7 +226,7 @@ public:
 //  patterns: Application to face recognition." IEEE Transactions on Pattern
 //  Analysis and Machine Intelligence, 28(12):2037-2041.
 //
-class LBPH : public FaceRecognizer
+class LBPH : public FaceRecognizerExtended
 {
 private:
     int _grid_x;
@@ -244,8 +244,8 @@ private:
     void train(InputArrayOfArrays src, InputArray labels, bool preserveData);
 
 public:
-    using FaceRecognizer::save;
-    using FaceRecognizer::load;
+    using FaceRecognizerExtended::save;
+    using FaceRecognizerExtended::load;
 
     // Initializes this LBPH Model. The current implementation is rather fixed
     // as it uses the Extended Local Binary Patterns per default.
@@ -296,12 +296,12 @@ public:
     void predict(InputArray _src, int &label, double &dist) const;
 
 	//ADDED: Gets the ordered n best predictions from a Face Recognizer.
-	void predict(InputArray src, int n, vector<int> &labels, vector<double> &confidences) const;
+	void predictN(InputArray src, size_t n, vector<int> &labels, vector<double> &confidences) const;
 
-    // See FaceRecognizer::load.
+    // See FaceRecognizerExtended::load.
     void load(const FileStorage& fs);
 
-    // See FaceRecognizer::save.
+    // See FaceRecognizerExtended::save.
     void save(FileStorage& fs) const;
 
     // Getter functions.
@@ -315,14 +315,14 @@ public:
 
 
 //------------------------------------------------------------------------------
-// FaceRecognizer
+// FaceRecognizerExtended
 //------------------------------------------------------------------------------
-void FaceRecognizer::update(InputArrayOfArrays, InputArray) {
-    string error_msg = format("This FaceRecognizer (%s) does not support updating, you have to use FaceRecognizer::train to update it.", this->name().c_str());
+void FaceRecognizerExtended::update(InputArrayOfArrays, InputArray) {
+    string error_msg = format("This FaceRecognizerExtended (%s) does not support updating, you have to use FaceRecognizerExtended::train to update it.", this->name().c_str());
     CV_Error(CV_StsNotImplemented, error_msg);
 }
 
-void FaceRecognizer::save(const string& filename) const {
+void FaceRecognizerExtended::save(const string& filename) const {
     FileStorage fs(filename, FileStorage::WRITE);
     if (!fs.isOpened())
         CV_Error(CV_StsError, "File can't be opened for writing!");
@@ -330,7 +330,7 @@ void FaceRecognizer::save(const string& filename) const {
     fs.release();
 }
 
-void FaceRecognizer::load(const string& filename) {
+void FaceRecognizerExtended::load(const string& filename) {
     FileStorage fs(filename, FileStorage::READ);
     if (!fs.isOpened())
         CV_Error(CV_StsError, "File can't be opened for writing!");
@@ -423,7 +423,7 @@ int Eigenfaces::predict(InputArray _src) const {
     return label;
 }
 
-void Eigenfaces::predict(InputArray _src, int n, vector<int> &labels, vector<double> &confidences) const{
+void Eigenfaces::predictN(InputArray _src, size_t n, vector<int> &labels, vector<double> &confidences) const{
 	// get data
 	Mat src = _src.getMat();
 	// make sure the user is passing correct data
@@ -496,7 +496,7 @@ void Eigenfaces::save(FileStorage& fs) const {
 // Fisherfaces
 //------------------------------------------------------------------------------
 
-// See FaceRecognizer::load.
+// See FaceRecognizerExtended::load.
 void Fisherfaces::load(const FileStorage& fs) {
     //read matrices
     fs["num_components"] >> _num_components;
@@ -508,7 +508,7 @@ void Fisherfaces::load(const FileStorage& fs) {
     fs["labels"] >> _labels;
 }
 
-// See FaceRecognizer::save.
+// See FaceRecognizerExtended::save.
 void Fisherfaces::save(FileStorage& fs) const {
     // write matrices
     fs << "num_components" << _num_components;
@@ -555,7 +555,7 @@ void Fisherfaces::train(InputArray src, InputArray _lbls) {
     _projections.clear();
     // safely copy from cv::Mat to std::vector
     vector<int> ll;
-    for(int i = 0; i < labels.total(); i++) {
+    for(size_t i = 0; i < labels.total(); i++) {
         ll.push_back(labels.at<int>(i));
     }
     // get the number of unique classes
@@ -615,7 +615,7 @@ int Fisherfaces::predict(InputArray _src) const {
     return label;
 }
 
-void Fisherfaces::predict(InputArray _src, int n, vector<int> &labels, vector<double> &confidences) const{
+void Fisherfaces::predictN(InputArray _src, size_t n, vector<int> &labels, vector<double> &confidences) const{
 	    Mat src = _src.getMat();
     // check data alignment just for clearer exception messages
     if(_projections.empty()) {
@@ -672,7 +672,7 @@ void LBPH::load(const FileStorage& fs) {
    fs["labels"] >> _labels;
 }
 
-// See cv::FaceRecognizer::save.
+// See cv::FaceRecognizerExtended::save.
 void LBPH::save(FileStorage& fs) const {
     fs << "radius" << _radius;
     fs << "neighbors" << _neighbors;
@@ -760,7 +760,7 @@ void LBPH::predict(InputArray _src, int &minClass, double &minDist) const {
     // find 1-nearest neighbor
     minDist = DBL_MAX;
     minClass = -1;
-    for(int sampleIdx = 0; sampleIdx < _histograms.size(); sampleIdx++) {
+    for(size_t sampleIdx = 0; sampleIdx < _histograms.size(); sampleIdx++) {
         double dist = compareHist(_histograms[sampleIdx], query, CV_COMP_CHISQR);
         if((dist < minDist) && (dist < _threshold)) {
             minDist = dist;
@@ -776,7 +776,7 @@ int LBPH::predict(InputArray _src) const {
     return label;
 }
 
-void LBPH::predict(InputArray _src, int n, vector<int> &labels, vector<double> &confidences) const{
+void LBPH::predictN(InputArray _src, size_t n, vector<int> &labels, vector<double> &confidences) const{
 	if(_histograms.empty()) {
         // throw error if no data (or simply return -1?)
         string error_message = "This LBPH model is not computed yet. Did you call the train method?";
@@ -799,7 +799,7 @@ void LBPH::predict(InputArray _src, int n, vector<int> &labels, vector<double> &
 	double dist;
 	list<pair<int, double>>::iterator it = elements.begin();
 
-	for(int sampleIdx = 0; sampleIdx < _histograms.size(); sampleIdx++) {
+	for(size_t sampleIdx = 0; sampleIdx < _histograms.size(); sampleIdx++) {
 		dist = compareHist(_histograms[sampleIdx], query, CV_COMP_CHISQR);
 		label = _labels.at<int>((int)sampleIdx);
 		//cout <<sampleIdx << " label: " << _labels.at<int>((int)sampleIdx) << " confidence: " << dist << endl;
@@ -822,23 +822,23 @@ void LBPH::predict(InputArray _src, int n, vector<int> &labels, vector<double> &
 	}
 }
 
-Ptr<FaceRecognizer> createEigenFaceRecognizer(int num_components, double threshold)
+Ptr<FaceRecognizerExtended> createEigenFaceRecognizerExtended(int num_components, double threshold)
 {
     return new Eigenfaces(num_components, threshold);
 }
 
-Ptr<FaceRecognizer> createFisherFaceRecognizer(int num_components, double threshold)
+Ptr<FaceRecognizerExtended> createFisherFaceRecognizerExtended(int num_components, double threshold)
 {
     return new Fisherfaces(num_components, threshold);
 }
 
-Ptr<FaceRecognizer> createLBPHFaceRecognizer(int radius, int neighbors,
+Ptr<FaceRecognizerExtended> createLBPHFaceRecognizerExtended(int radius, int neighbors,
                                              int grid_x, int grid_y, double threshold)
 {
     return new LBPH(radius, neighbors, grid_x, grid_y, threshold);
 }
 
-CV_INIT_ALGORITHM(Eigenfaces, "FaceRecognizer.Eigenfaces",
+CV_INIT_ALGORITHM(Eigenfaces, "FaceRecognizerExtended.Eigenfaces",
                   obj.info()->addParam(obj, "ncomponents", obj._num_components);
                   obj.info()->addParam(obj, "threshold", obj._threshold);
                   obj.info()->addParam(obj, "projections", obj._projections, true);
@@ -847,7 +847,7 @@ CV_INIT_ALGORITHM(Eigenfaces, "FaceRecognizer.Eigenfaces",
                   obj.info()->addParam(obj, "eigenvalues", obj._eigenvalues, true);
                   obj.info()->addParam(obj, "mean", obj._mean, true));
 
-CV_INIT_ALGORITHM(Fisherfaces, "FaceRecognizer.Fisherfaces",
+CV_INIT_ALGORITHM(Fisherfaces, "FaceRecognizerExtended.Fisherfaces",
                   obj.info()->addParam(obj, "ncomponents", obj._num_components);
                   obj.info()->addParam(obj, "threshold", obj._threshold);
                   obj.info()->addParam(obj, "projections", obj._projections, true);
@@ -856,7 +856,7 @@ CV_INIT_ALGORITHM(Fisherfaces, "FaceRecognizer.Fisherfaces",
                   obj.info()->addParam(obj, "eigenvalues", obj._eigenvalues, true);
                   obj.info()->addParam(obj, "mean", obj._mean, true));
 
-CV_INIT_ALGORITHM(LBPH, "FaceRecognizer.LBPH",
+CV_INIT_ALGORITHM(LBPH, "FaceRecognizerExtended.LBPH",
                   obj.info()->addParam(obj, "radius", obj._radius);
                   obj.info()->addParam(obj, "neighbors", obj._neighbors);
                   obj.info()->addParam(obj, "grid_x", obj._grid_x);

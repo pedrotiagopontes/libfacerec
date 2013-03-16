@@ -19,8 +19,9 @@
 #define __FACEREC_HPP__
 
 #include "opencv2/core/core.hpp"
+#include "opencv2/contrib/contrib.hpp"
 
-#include "subspace.hpp"
+//#include "subspace.hpp"
 #include "helper.hpp"
 #include "lbp.hpp"
 
@@ -28,21 +29,21 @@
 using namespace std;
 
 namespace cv {
-enum
-{
-    COLORMAP_AUTUMN = 0,
-    COLORMAP_BONE = 1,
-    COLORMAP_JET = 2,
-    COLORMAP_WINTER = 3,
-    COLORMAP_RAINBOW = 4,
-    COLORMAP_OCEAN = 5,
-    COLORMAP_SUMMER = 6,
-    COLORMAP_SPRING = 7,
-    COLORMAP_COOL = 8,
-    COLORMAP_HSV = 9,
-    COLORMAP_PINK = 10,
-    COLORMAP_HOT = 11
-};
+//enum
+//{
+//    COLORMAP_AUTUMN = 0,
+//    COLORMAP_BONE = 1,
+//    COLORMAP_JET = 2,
+//    COLORMAP_WINTER = 3,
+//    COLORMAP_RAINBOW = 4,
+//    COLORMAP_OCEAN = 5,
+//    COLORMAP_SUMMER = 6,
+//    COLORMAP_SPRING = 7,
+//    COLORMAP_COOL = 8,
+//    COLORMAP_HSV = 9,
+//    COLORMAP_PINK = 10,
+//    COLORMAP_HOT = 11
+//};
 
 /**
  * Applies a colormap to the image given in src and returns the
@@ -68,30 +69,30 @@ CV_EXPORTS void applyColorMap(InputArray src, OutputArray dst, int colormap);
 
 
 /**
- * cv::FaceRecognizer is the abstract base class for all
+ * cv::FaceRecognizerExtended is the abstract base class for all
  * face recognition algorithms in OpenCV.
  */
-class FaceRecognizer : public Algorithm {
+class FaceRecognizerExtended : public Algorithm {
 
 public:
 
     //! virtual destructor
-    virtual ~FaceRecognizer() {}
+    virtual ~FaceRecognizerExtended() {}
 
-    // Trains a FaceRecognizer.
+    // Trains a FaceRecognizerExtended.
     virtual void train(InputArray src, InputArray labels) = 0;
 
-    // Updates a FaceRecognizer.
+    // Updates a FaceRecognizerExtended.
     virtual void update(InputArrayOfArrays src, InputArray labels);
 
-    // Gets a prediction from a FaceRecognizer.
+    // Gets a prediction from a FaceRecognizerExtended.
     virtual int predict(InputArray src) const = 0;
 
-    // Gets a prediction from a FaceRecognizer.
+    // Gets a prediction from a FaceRecognizerExtended.
     virtual void predict(InputArray src, int &label, double &confidence) const = 0;
 
 	//ADDED: Gets the ordered n best predictions from a Face Recognizer.
-	virtual void predict(InputArray src, int n, vector<int> &labels, vector<double> &confidences) const = 0;
+	virtual void predictN(InputArray src, size_t n, std::vector<int> &labels, std::vector<double> &confidences) const = 0;
 
     // Serializes this object to a given filename.
     virtual void save(const string& filename) const;
@@ -106,11 +107,11 @@ public:
     virtual void load(const FileStorage& fs) = 0;
 };
 
-CV_EXPORTS Ptr<FaceRecognizer> createEigenFaceRecognizer(int num_components = 0, double threshold = DBL_MAX);
+CV_EXPORTS Ptr<FaceRecognizerExtended> createEigenFaceRecognizerExtended(int num_components = 0, double threshold = DBL_MAX);
 
-CV_EXPORTS Ptr<FaceRecognizer> createFisherFaceRecognizer(int num_components = 0, double threshold = DBL_MAX);
+CV_EXPORTS Ptr<FaceRecognizerExtended> createFisherFaceRecognizerExtended(int num_components = 0, double threshold = DBL_MAX);
 
-CV_EXPORTS Ptr<FaceRecognizer> createLBPHFaceRecognizer(int radius=1, int neighbors=8,
+CV_EXPORTS Ptr<FaceRecognizerExtended> createLBPHFaceRecognizerExtended(int radius=1, int neighbors=8,
                                                             int grid_x=8, int grid_y=8,
                                                             double threshold = DBL_MAX);
 

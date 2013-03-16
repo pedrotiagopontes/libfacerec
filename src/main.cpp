@@ -121,13 +121,13 @@ int main(int argc, const char *argv[]) {
     //
     //      cv::createEigenFaceRecognizer(10, 123.0);
     //
-	Ptr<FaceRecognizer> model = createLBPHFaceRecognizer();
+	Ptr<FaceRecognizerExtended> model = createLBPHFaceRecognizerExtended();
     model->train(images, labels);
     // The following line predicts the label of a given
     // test image:
 	vector<int> labelsTest;
 	vector<double> confidencesTest;
-    model->predict(testSample, 20, labelsTest, confidencesTest);
+    model->predictN(testSample, 20, labelsTest, confidencesTest);
     //
     // To get the confidence of a prediction call the model with:
     //
@@ -135,7 +135,7 @@ int main(int argc, const char *argv[]) {
     //      double confidence = 0.0;
     //      model->predict(testSample, predictedLabel, confidence);
     //
-	for(int i=0; i < labelsTest.size(); i++){
+	for(size_t i=0; i < labelsTest.size(); i++){
 		string result_message = format("%d Predicted class = %d / Actual class = %d / Confidence = %f",i, labelsTest[i], testLabel, confidencesTest[i]);
 		cout << result_message << endl;
 	}
