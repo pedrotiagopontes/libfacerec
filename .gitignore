@@ -1,2 +1,6 @@
 *.pyc
-/libfacerec
+/libfacerec/Debug
+/libfacerec/libfacerec/Debug
+/libfacerec/Release
+/libfacerec/libfacerec/Release
+/libfacerec/ipch
